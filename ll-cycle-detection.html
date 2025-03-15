@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Linked List Cycle Detection</title>
+    <style>
+        :root {
+            --primary: #3a86ff;
+            --secondary: #ff006e;
+            --highlight: #8338ec;
+            --background: #f0f4f8;
+            --text: #2b2d42;
+            --node-size: 60px;
+            --arrow-width: 3px;
+            --fast: #e63946;
+            --slow: #06d6a0;
+            --cycle: #8338ec;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--background);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            transition: background-color 0.5s;
+        }
+
+        header {
+            background: linear-gradient(to right, var(--primary), var(--highlight));
+            color: white;
+            text-align: center;
+            padding: 2rem 0;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+            flex: 1;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            justify-content: center;
+        }
+
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: transform 0.1s, background-color 0.3s;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        button:hover {
+            background-color: #2a75e6;
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        button.secondary {
+            background-color: var(--secondary);
+        }
+
+        button.secondary:hover {
+            background-color: #e6005f;
+        }
+
+        .visualization {
+            position: relative;
+            height: 400px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            transition: height 0.3s;
+            margin-bottom: 2rem;
+        }
+
+        .list-container {
+            position: relative;
+            height: 100%;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .node {
+            position: absolute;
+            width: var(--node-size);
+            height: var(--node-size);
+            border-radius: 50%;
+            background-color: white;
+            border: 3px solid var(--primary);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+            transition: all 0.5s ease, transform 0.3s;
+            z-index: 10;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .node.slow-pointer {
+            box-shadow: 0 0 0 5px rgba(6, 214, 160, 0.5);
+            border-color: var(--slow);
+        }
+
+        .node.fast-pointer {
+            box-shadow: 0 0 0 5px rgba(230, 57, 70, 0.5);
+            border-color: var(--fast);
+        }
+
+        .node.cycle-node {
+            border-color: var(--cycle);
+            background-color: rgba(131, 56, 236, 0.1);
+        }
+
+        .arrow {
+            position: absolute;
+            height: var(--arrow-width);
+            background-color: var(--primary);
+            transform-origin: left center;
+            z-index: 5;
+            transition: all 0.5s ease;
+        }
+
+        .arrow::after {
+            content: '';
+            position: absolute;
+            right: -10px;
+            top: 50%;
+            transform: translateY(-50%);
+            border-left: 10px solid var(--primary);
+            border-top: 8px solid transparent;
+            border-bottom: 8px solid transparent;
+        }
+
+        .arrow.cycle {
+            background-color: var(--cycle);
+        }
+
+        .arrow.cycle::after {
+            border-left-color: var(--cycle);
+        }
+
+        .legend {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+        }
+
+        .slow-color {
+            background-color: var(--slow);
+            border: 2px solid rgba(0, 0, 0, 0.2);
+        }
+
+        .fast-color {
+            background-color: var(--fast);
+            border: 2px solid rgba(0, 0, 0, 0.2);
+        }
+
+        .cycle-color {
+            background-color: var(--cycle);
+        }
+
+        .status {
+            text-align: center;
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            min-height: 4rem;
+            padding: 1rem;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .explanation {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+
+        .explanation h2 {
+            margin-bottom: 1rem;
+            color: var(--primary);
+        }
+
+        .explanation p {
+            margin-bottom: 1rem;
+            line-height: 1.6;
+        }
+
+        footer {
+            text-align: center;
+            padding: 1.5rem;
+            background-color: var(--text);
+            color: var(--background);
+            margin-top: auto;
+        }
+
+        /* Dark mode */
+        body.dark-mode {
+            --background: #121212;
+            --text: #e0e0e0;
+        }
+
+        body.dark-mode .visualization,
+        body.dark-mode .status,
+        body.dark-mode .explanation {
+            background-color: #1f1f1f;
+            color: var(--text);
+        }
+
+        body.dark-mode .node {
+            background-color: #2a2a2a;
+        }
+
+        .theme-toggle {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            z-index: 100;
+        }
+
+        @media (max-width: 768px) {
+            .visualization {
+                height: 300px;
+            }
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            button {
+                width: 100%;
+                max-width: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <button class="theme-toggle" id="themeToggle">🌙</button>
+        <h1>Linked List Cycle Detection</h1>
+        <p class="subtitle">Floyd's Tortoise and Hare Algorithm Visualization</p>
+    </header>
+
+    <div class="container">
+        <div class="controls">
+            <button id="newListBtn">Create New List</button>
+            <button id="addCycleBtn">Add Cycle</button>
+            <button id="detectCycleBtn" class="secondary">Detect Cycle</button>
+            <button id="resetBtn">Reset</button>
+        </div>
+
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color slow-color"></div>
+                <span>Slow Pointer (Tortoise)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color fast-color"></div>
+                <span>Fast Pointer (Hare)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color cycle-color"></div>
+                <span>Cycle Nodes</span>
+            </div>
+        </div>
+
+        <div class="status" id="status">
+            Create a new linked list to get started!
+        </div>
+
+        <div class="visualization">
+            <div class="list-container" id="listContainer"></div>
+        </div>
+
+        <div class="explanation">
+            <h2>Floyd's Cycle-Finding Algorithm (Tortoise and Hare)</h2>
+            <p>This algorithm uses two pointers moving at different speeds to detect a cycle in a linked list:</p>
+            <p><strong>Slow Pointer (Tortoise):</strong> Moves one node at a time.</p>
+            <p><strong>Fast Pointer (Hare):</strong> Moves two nodes at a time.</p>
+            <p>If there is a cycle, the fast pointer will eventually catch up to the slow pointer from behind. If there is no cycle, the fast pointer will reach the end of the list.</p>
+            <p>This algorithm has O(n) time complexity and O(1) space complexity, making it an efficient solution for cycle detection.</p>
+        </div>
+    </div>
+
+    <footer>
+        <p>Linked List Cycle Detection Visualization | Created for educational purposes</p>
+    </footer>
+
+    <script>
+        class Node {
+            constructor(value) {
+                this.value = value;
+                this.next = null;
+                this.element = null;
+                this.arrowElement = null;
+                this.x = 0;
+                this.y = 0;
+            }
+        }
+
+        class LinkedList {
+            constructor() {
+                this.head = null;
+                this.nodes = [];
+                this.hasCycle = false;
+                this.cycleStart = null;
+                this.cycleEnd = null;
+            }
+
+            append(value) {
+                const newNode = new Node(value);
+                this.nodes.push(newNode);
+
+                if (!this.head) {
+                    this.head = newNode;
+                    return;
+                }
+
+                let current = this.head;
+                while (current.next) {
+                    current = current.next;
+                }
+                current.next = newNode;
+            }
+
+            addCycle(startIndex, endIndex) {
+                if (startIndex >= 0 && startIndex < this.nodes.length &&
+                    endIndex >= 0 && endIndex < this.nodes.length) {
+                    this.nodes[endIndex].next = this.nodes[startIndex];
+                    this.hasCycle = true;
+                    this.cycleStart = this.nodes[startIndex];
+                    this.cycleEnd = this.nodes[endIndex];
+                }
+            }
+
+            detectCycle() {
+                if (!this.head) return null;
+
+                let slow = this.head;
+                let fast = this.head;
+                let isCycleDetected = false;
+
+                // First phase: detect if there's a cycle
+                while (fast !== null && fast.next !== null) {
+                    slow = slow.next;
+                    fast = fast.next.next;
+
+                    if (slow === fast) {
+                        isCycleDetected = true;
+                        break;
+                    }
+                }
+
+                if (!isCycleDetected) return null;
+
+                // Second phase: find the cycle start
+                slow = this.head;
+                while (slow !== fast) {
+                    slow = slow.next;
+                    fast = fast.next;
+                }
+
+                return slow; // This is the start of the cycle
+            }
+        }
+
+        // DOM Elements
+        const listContainer = document.getElementById('listContainer');
+        const statusElement = document.getElementById('status');
+        const newListBtn = document.getElementById('newListBtn');
+        const addCycleBtn = document.getElementById('addCycleBtn');
+        const detectCycleBtn = document.getElementById('detectCycleBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const themeToggleBtn = document.getElementById('themeToggle');
+
+        // Variables
+        let linkedList = new LinkedList();
+        let nodeRadius = 30; // Half of node size
+        let slowPointerNode = null;
+        let fastPointerNode = null;
+        let animationSpeed = 1000;
+        let animationPaused = false;
+        let animationTimeout = null;
+
+        // Create a new list with random values
+        function createNewList() {
+            resetList();
+            const length = getRandomInt(5, 8);
+            
+            for (let i = 0; i < length; i++) {
+                linkedList.append(i + 1);
+            }
+            
+            renderList();
+            updateStatus("Linked list created! Add a cycle or detect if one exists.");
+            addCycleBtn.disabled = false;
+            detectCycleBtn.disabled = false;
+        }
+
+        // Add a cycle to the list
+        function addCycle() {
+            if (linkedList.nodes.length < 3) {
+                updateStatus("List is too short to add a cycle.");
+                return;
+            }
+
+            // Choose random start and end points for the cycle
+            const startIndex = getRandomInt(0, Math.floor(linkedList.nodes.length / 2));
+            const endIndex = linkedList.nodes.length - 1;
+            
+            linkedList.addCycle(startIndex, endIndex);
+            renderList();
+            updateStatus(`Cycle added from node ${endIndex + 1} to node ${startIndex + 1}!`);
+            addCycleBtn.disabled = true;
+        }
+
+        // Detect if there's a cycle in the list
+        async function detectCycle() {
+            if (!linkedList.head) {
+                updateStatus("Create a list first!");
+                return;
+            }
+
+            // Disable buttons during animation
+            setButtonsEnabled(false);
+            
+            let slow = linkedList.head;
+            let fast = linkedList.head;
+            let step = 0;
+            let cycleDetected = false;
+            
+            updateStatus("Starting cycle detection with Floyd's Tortoise and Hare algorithm...");
+            await sleep(animationSpeed);
+            
+            // Set initial pointers
+            slowPointerNode = slow;
+            fastPointerNode = fast;
+            updatePointers();
+            
+            updateStatus("Both pointers start at the head of the list.");
+            await sleep(animationSpeed);
+
+            // First phase: detect if there's a cycle
+            while (fast !== null && fast.next !== null) {
+                step++;
+                
+                // Move slow pointer one step
+                slow = slow.next;
+                updateStatus(`Step ${step}: Slow pointer moves to node ${slow.value}`);
+                slowPointerNode = slow;
+                updatePointers();
+                await sleep(animationSpeed);
+                
+                // Move fast pointer two steps
+                fast = fast.next;
+                updateStatus(`Step ${step}: Fast pointer moves to node ${fast.value}`);
+                fastPointerNode = fast;
+                updatePointers();
+                await sleep(animationSpeed / 2);
+                
+                if (fast.next === null) {
+                    updateStatus("Fast pointer reached the end of the list. No cycle detected!");
+                    break;
+                }
+                
+                fast = fast.next;
+                updateStatus(`Step ${step}: Fast pointer moves again to node ${fast.value}`);
+                fastPointerNode = fast;
+                updatePointers();
+                await sleep(animationSpeed / 2);
+                
+                // Check if pointers meet
+                if (slow === fast) {
+                    cycleDetected = true;
+                    updateStatus("Pointers have met! A cycle exists in the linked list.");
+                    await sleep(animationSpeed);
+                    break;
+                }
+            }
+            
+            if (!cycleDetected) {
+                resetPointers();
+                setButtonsEnabled(true);
+                return;
+            }
+            
+            // Second phase: find the start of the cycle
+            updateStatus("Now finding the start of the cycle...");
+            await sleep(animationSpeed);
+            
+            slow = linkedList.head;
+            slowPointerNode = slow;
+            updatePointers();
+            
+            updateStatus("Slow pointer reset to head, both will move at the same speed.");
+            await sleep(animationSpeed);
+            
+            let cycleStart = null;
+            step = 0;
+            
+            while (slow !== fast) {
+                step++;
+                slow = slow.next;
+                fast = fast.next;
+                
+                slowPointerNode = slow;
+                fastPointerNode = fast;
+                updatePointers();
+                
+                updateStatus(`Step ${step}: Both pointers move one step.`);
+                await sleep(animationSpeed);
+            }
+            
+            cycleStart = slow;
+            
+            // Highlight the cycle
+            let current = cycleStart;
+            do {
+                current.element.classList.add('cycle-node');
+                if (current.arrowElement) {
+                    current.arrowElement.classList.add('cycle');
+                }
+                current = current.next;
+                await sleep(animationSpeed / 3);
+            } while (current !== cycleStart);
+            
+            updateStatus(`Cycle detected! The cycle starts at node ${cycleStart.value}.`);
+            
+            resetPointers();
+            setButtonsEnabled(true);
+        }
+
+        // Reset the list and clear the display
+        function resetList() {
+            linkedList = new LinkedList();
+            listContainer.innerHTML = '';
+            resetPointers();
+            clearTimeout(animationTimeout);
+            animationPaused = false;
+            updateStatus("Reset complete. Create a new list to get started!");
+            addCycleBtn.disabled = true;
+            detectCycleBtn.disabled = true;
+        }
+
+        // Update the pointers display
+        function updatePointers() {
+            // Remove previous pointer highlights
+            document.querySelectorAll('.node').forEach(node => {
+                node.classList.remove('slow-pointer', 'fast-pointer');
+            });
+            
+            // Add new pointer highlights
+            if (slowPointerNode && slowPointerNode.element) {
+                slowPointerNode.element.classList.add('slow-pointer');
+            }
+            
+            if (fastPointerNode && fastPointerNode.element) {
+                fastPointerNode.element.classList.add('fast-pointer');
+            }
+        }
+
+        // Reset pointers
+        function resetPointers() {
+            slowPointerNode = null;
+            fastPointerNode = null;
+            updatePointers();
+        }
+
+        // Render the linked list on the screen
+        function renderList() {
+            listContainer.innerHTML = '';
+            
+            if (!linkedList.head) return;
+            
+            const nodeSize = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--node-size'));
+            nodeRadius = nodeSize / 2;
+            
+            const containerWidth = listContainer.clientWidth;
+            const containerHeight = listContainer.clientHeight;
+            
+            // Calculate positions for each node
+            if (linkedList.hasCycle) {
+                // Place nodes in a circle with a straight part
+                const circleNodes = [];
+                const straightNodes = [];
+                
+                let current = linkedList.head;
+                let foundCycleStart = false;
+                
+                // Identify which nodes are part of the cycle
+                while (current) {
+                    if (current === linkedList.cycleStart) {
+                        foundCycleStart = true;
+                    }
+                    
+                    if (!foundCycleStart) {
+                        straightNodes.push(current);
+                    } else {
+                        circleNodes.push(current);
+                        
+                        // Break the loop to avoid infinite looping
+                        if (current.next === linkedList.cycleStart) {
+                            break;
+                        }
+                    }
+                    
+                    current = current.next;
+                }
+                
+                // Position straight nodes in a line
+                const straightPartLength = straightNodes.length;
+                const startX = containerWidth * 0.2;
+                const endX = containerWidth * 0.5;
+                const straightY = containerHeight * 0.3;
+                
+                straightNodes.forEach((node, index) => {
+                    node.x = startX + (index / Math.max(1, straightPartLength - 1)) * (endX - startX);
+                    node.y = straightY;
+                });
+                
+                // Position cycle nodes in a circle
+                const circleRadius = Math.min(containerWidth, containerHeight) * 0.3;
+                const centerX = containerWidth * 0.7;
+                const centerY = containerHeight * 0.6;
+                
+                circleNodes.forEach((node, index) => {
+                    const angle = (index / circleNodes.length) * 2 * Math.PI - Math.PI / 2;
+                    node.x = centerX + circleRadius * Math.cos(angle);
+                    node.y = centerY + circleRadius * Math.sin(angle);
+                });
+            } else {
+                // Place nodes in a horizontal line
+                const nodesCount = linkedList.nodes.length;
+                const padding = 100;
+                let startX = padding;
+                let endX = containerWidth - padding;
+                
+                if (nodesCount > 6) {
+                    // For more nodes, use a curved line
+                    linkedList.nodes.forEach((node, index) => {
+                        const progress = index / (nodesCount - 1);
+                        node.x = startX + progress * (endX - startX);
+                        
+                        // Create a slight curve
+                        const curveHeight = containerHeight * 0.2;
+                        node.y = containerHeight / 2 + Math.sin(progress * Math.PI) * curveHeight;
+                    });
+                } else {
+                    // For fewer nodes, use a straight line
+                    linkedList.nodes.forEach((node, index) => {
+                        node.x = startX + (index / (nodesCount - 1)) * (endX - startX);
+                        node.y = containerHeight / 2;
+                    });
+                }
+            }
+            
+            // Create node elements
+            linkedList.nodes.forEach(node => {
+                // Create node element
+                const nodeElement = document.createElement('div');
+                nodeElement.className = 'node';
+                nodeElement.textContent = node.value;
+                nodeElement.style.left = `${node.x - nodeRadius}px`;
+                nodeElement.style.top = `${node.y - nodeRadius}px`;
+                listContainer.appendChild(nodeElement);
+                node.element = nodeElement;
+                
+                // Create arrow element if there's a next node
+                if (node.next) {
+                    const arrow = document.createElement('div');
+                    arrow.className = 'arrow';
+                    
+                    // Calculate arrow position and rotation
+                    const dx = node.next.x - node.x;
+                    const dy = node.next.y - node.y;
+                    const length = Math.sqrt(dx * dx + dy * dy) - nodeRadius * 2;
+                    const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+                    
+                    arrow.style.width = `${length}px`;
+                    arrow.style.left = `${node.x + nodeRadius * Math.cos(angle * Math.PI / 180)}px`;
+                    arrow.style.top = `${node.y + nodeRadius * Math.sin(angle * Math.PI / 180)}px`;
+                    arrow.style.transform = `rotate(${angle}deg)`;
+                    
+                    listContainer.appendChild(arrow);
+                    node.arrowElement = arrow;
+                    
+                    // Add cycle class if part of the cycle
+                    if (linkedList.hasCycle && node.next === linkedList.cycleStart) {
+                        arrow.classList.add('cycle');
+                    }
+                }
+            });
+        }
+
+        // Update status message
+        function updateStatus(message) {
+            statusElement.textContent = message;
+        }
+
+        // Enable or disable all buttons
+        function setButtonsEnabled(enabled) {
+            newListBtn.disabled = !enabled;
+            addCycleBtn.disabled = !enabled || linkedList.hasCycle;
+            detectCycleBtn.disabled = !enabled;
+            resetBtn.disabled = !enabled;
+        }
+
+        // Sleep function for animation timing
+        function sleep(ms) {
+            return new Promise(resolve => {
+                if (animationPaused) {
+                    animationTimeout = setTimeout(resolve, ms);
+                } else {
+                    animationTimeout = setTimeout(resolve, ms);
+                }
+            });
+        }
+
+        // Generate a random integer between min and max (inclusive)
+        function getRandomInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        // Toggle dark/light mode
+        function toggleTheme() {
+            const body = document.body;
+            body.classList.toggle('dark-mode');
+            
+            const themeIcon = document.getElementById('themeToggle');
+            if (body.classList.contains('dark-mode')) {
+                themeIcon.textContent = '☀️';
+            } else {
+                themeIcon.textContent = '🌙';
+            }
+        }
+
+        // Event Listeners
+        newListBtn.addEventListener('click', createNewList);
+        addCycleBtn.addEventListener('click', addCycle);
+        detectCycleBtn.addEventListener('click', detectCycle);
+        resetBtn.addEventListener('click', resetList);
+        themeToggleBtn.addEventListener('click', toggleTheme);
+
+        // Initialize
+        window.addEventListener('load', () => {
+            addCycleBtn.disabled = true;
+            detectCycleBtn.disabled = true;
+            
+            // Adjust visualization height based on screen size
+            const updateVisualizationHeight = () => {
+                const visualization = document.querySelector('.visualization');
+                if (window.innerWidth < 768) {
+                    visualization.style.height = '300px';
+                } else {
+                    visualization.style.height = '400px';
+                }
+            };
+            
+            updateVisualizationHeight();
+            window.addEventListener('resize', () => {
+                updateVisualizationHeight();
+                if (linkedList.head) {
+                    renderList();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
